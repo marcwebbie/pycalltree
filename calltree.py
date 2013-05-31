@@ -1,4 +1,5 @@
 import re
+import sys
 from itertools import chain
 
 
@@ -11,7 +12,7 @@ def find_calls(s, r):
     for i in chain(m, find_calls(t, m)):
         yield i
 
-def as_ul(output_name, f_list):
+def to_html(output_name, f_list):
     html_begin = '<!DOCTYPE html><head></head><body><h1>{0}</h1><ul>'.format(output_name)
     html_middle = ''
     html_end =  '</ul></body></ul>'
@@ -19,14 +20,28 @@ def as_ul(output_name, f_list):
         html_middle += '<li>{0}</li>'.format(elem)
     return html_begin + html_middle + html_end
 
-def run():
-    f = open('tap.cpp', 'r') # Open file for reading
-    txt = f.read().replace('\n', ' ').replace('\t', ' ') # remove whitespace
+def to_unique_list(f_list):
+    return sorted(list(set(f_list)))
 
-    f_list = list(find_calls(txt, []))
-    f_list = sorted(list(set(f_list))) # remove duplicates from list and sort
+# Begin handling inputs
+args = sys.argv[1:]
+if len(args) > 0:
+    try:
+        input_filepath = open(args[0], 'r')
+        txt = input_filepath.read().replace('\n', ' ') # Open file and remove whitespace
+        f_list = to_unique_list(list(find_calls(txt, [])))
 
-    result_filename = '{}{}'.format(f.name,'.html')
-    open(result_filename, 'w').write(as_ul(result_filename, f_list))
-
-run()
+        if len(args) > 1:
+            result_filepath = args[1]
+            open(result_filepath, 'w').write(to_html('Output', f_list))
+            print("saved to -> ", result_filepath) 
+        else: 
+            for elem in f_list:
+                print(elem)
+    except FileNotFoundError:
+        print("File not found: ", args[0])
+    except:
+        print("Unexpected error:", sys.exc_info()[0])
+        raise
+else:
+    print('usage: python calltree input_file [output_file]')
